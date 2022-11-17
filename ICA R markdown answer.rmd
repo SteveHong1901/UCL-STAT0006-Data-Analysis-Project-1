@@ -1,0 +1,366 @@
+---
+title: 'STAT0006: ICA 1'
+date: "11th November 2022"
+output:
+  pdf_document: default
+  html_document: default
+
+subtitle: 'Student number: 21000790'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1 
+
+### Import data set and check for missing values                                            
+
+The data set in csv format could be imported as df, displayed as below:
+```{r Question 1, include=TRUE, echo=FALSE}
+df <- read.csv('commute.csv')
+head(df)
+```
+
+There are 9 predictor variables and 547 observations. Missing values could be checked as below:
+
+```{r include=TRUE}
+sum(is.na(df))
+```
+There is no missing data found in the data set.
+
+It is important to gain insights into the distribution and summary statistics of each variable, so that potential issues such as outlier can be removed. The numeric and categorical variables can be considered separately.
+
+### Numeric Variable
+
+```{r include=TRUE,echo=FALSE}
+summary(df[c("time","rain","temperature","traffic")])
+
+```
+
+We can see that the minimum value of "time" variable is negative, which is not valid. We could filter out all observations where time is negative, yet it was mentioned in the ICA Forum that this was not necessary. We can also observe the distributions of the numeric variables through a series of box plots:
+
+```{r include=TRUE,echo=FALSE, fig.height=3, fig.width=5, fig.align='center'}
+par(mfrow=c(2,2))
+boxplot(df$time, horizontal = TRUE, col = "light blue", xlab = "time(minutes)", main = "box plot for time")
+boxplot(df$rain, horizontal = TRUE, col = "light blue", xlab = "rain(mm)", main = "box plot for rain")
+boxplot(df$temperature, horizontal = TRUE, col = "light blue", xlab = "temperature(C)", main = "box plot for temperature")
+boxplot(df$traffic, horizontal = TRUE, col = "light blue", xlab = "traffic", main = "box plot for traffic")
+
+
+```
+
+From the box plots of the numeric variables, there is little skewness in the distribution of each variable. Of all the variables, outliers can be observed in "rain" and "time".  
+
+We can also observe if there is any relationship between each pair of variable from "time","rain","coffee","temperature" and "traffic". This will support our selection of predictor variables when it comes to building linear models later on. The scatter plot of the variables and their Pearson Correlation Coefficients can be seen from the matrix below.
+
+Looking at the Pearson Correlation Coefficients, it is fair to claim that there is no strong linear relationship between all pairs of potential predictor variable (r = -0.01, r = 0.04, r = 0.02) and there is a stronger linear relationship between the pairs response-predictor variables (r = 0.24,r = 0.6, r= 0.1). However, from the scatter plot, it can be seen that there is strong non-linear relationship between "time" and "traffic" and a relatively low value of correlation coefficient (r = 0.03) between them.
+
+```{r  include=TRUE,echo=FALSE}
+M <- df[c("time","rain","temperature","traffic")]
+```
+
+```{r  include=TRUE, echo=FALSE, warning=FALSE, fig.height=5, fig.width=10, fig.align='center'}
+panel.cor <- function(x, y){
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- round(cor(x, y), digits=2)
+    txt <- paste0("r = ", r)
+    cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt)
+}
+# Customize upper panel
+upper.panel<-function(x, y){
+  points(x,y, pch = ".", col = "dark blue")
+}
+# Create the plots
+pairs(M, 
+      lower.panel = panel.cor,
+      upper.panel = upper.panel)
+```
+
+
+
+### Categorical Variable
+
+The box plots below show how the distribution of "time" varies among each level of each categorical predictor variable. We can therefore investigate the effect of each predictor variable on commute time by looking at where the range (height of box) and the mean (the red dot) shift. 
+
+```{r include=TRUE,echo=FALSE, warning=FALSE, tidy=TRUE,fig.dim = c(8, 5)}
+
+par(mfrow=c(2,3))
+
+boxplot(df$time~df$direction, ylab = "time (minutes)", xlab = "direction", col = "light blue", main = "time against direction levels")
+points(c(mean(df$time[df$direction=="from"]), mean(df$time[df$direction=="to"])), pch=16, cex=1.5, col="red")
+
+
+boxplot(df$time~df$school, ylab = "time (minutes)", xlab = "school", col = "light blue", main = "time against each school level")
+points(c(mean(df$time[df$school=="no"]), mean(df$time[df$school=="yes"])), pch=16, cex=1.5, col="red")
+
+
+boxplot(df$time~df$shoes, ylab = "time (minutes)", xlab = " ", col = "light blue", las = 2, main = "time against each shoes level", )
+points(c(mean(df$time[df$shoes=="boots"]), mean(df$time[df$shoes=="plimsolls"]),mean(df$time[df$shoes=="sandals"]),mean(df$time[df$shoes=="trainers"])), pch=16, cex=1.5, col="red")
+
+
+boxplot(df$time~df$food, ylab = "time (minutes)", xlab = "food", col = "light blue", main = "time against each food level")
+points(c(mean(df$time[df$food=="no"]), mean(df$time[df$food=="yes"])), pch=16, cex=1.5, col="red")
+
+boxplot(df$time~df$coffee, ylab = "time (minutes)", xlab = "coffee", col = "light blue", main = "time against no of coffee")
+points(c(mean(df$time[df$coffee==0]), 
+         mean(df$time[df$coffee==1]),
+         mean(df$time[df$coffee==2]),
+         mean(df$time[df$coffee==3]),
+         mean(df$time[df$coffee==4])), pch=16, cex=1.5, col="red")
+
+```
+The following observations can be made:
+
+* direction: The box plot suggests that direction has an effect on commute time. Traveling to work generally leads to longer commute time.
+
+* school: The box plot suggests that school has an effect on commute time. Having to drop kids off for school generally leads to longer commute time.
+
+* shoes: The box plot suggests that shoes has an effect on commute time, as different types of shoes generally leads to different ranges of values (wider for sandals, narrower for plimsolls) as well as the average commute time (highest for sandals, lowest for trainers).
+
+* food: The box plot suggests that food has an effect on commute time. Having to stop for food generally leads to longer commute time.
+
+* coffee: The box plot suggests that coffee has a stronger effect on commute time. More coffees ordered generally leads to longer commute time.
+
+
+**Word count for Q1:** 500/500 words.
+
+## Question 2
+
+Summary of Model 1a:
+```{r echo=FALSE, include=TRUE}
+time <- data.frame(df$time)
+model1a<-lm(df$time~df$coffee, data=df)
+summary(model1a)
+```
+Summary of Model 1b:
+
+```{r echo=FALSE, include = TRUE }
+model1b<-lm(df$time~as.factor(df$coffee), data=df)
+summary(model1b)
+```
+Model 1a is better because "coffee" makes sense as a numeric variable: 3 coffees is one unit larger than 4 coffees. From fitted model, if one more coffee is ordered, time increases by roughly 6.3 minutes, which is valid assuming constant time per coffee ordered.
+
+Model 1a is more effective when more than 4 cups of coffee are ordered, where one extra cup beyond 4 will increase time by 6.3 minutes. Model 1b considers all cases for above 4 cups of coffee to have the same effect on time (the intercept), which is not necessarily true in reality.
+
+Model 1b is not  valid, as if two coffees are ordered instead of 1, it takes less commute time (15.833 < 16.922), which is not true in reality. This can be checked using the second plot, the red line is above the blue line:
+
+```{r echo=FALSE, include = TRUE, warning=FALSE, ,  fig.height=5, fig.width=8, fig.align='center'}
+
+plot(df$coffee, df$time, pch = 20, ylab = "time(minutes)", xlab = "no of coffee order", main = "Coffee as Numeric Covariate")
+abline(a=30.1998,b=6.3360, col = "red")
+
+plot(df$coffee, df$time, pch = 20, ylab = "time(minutes)", xlab = "no of coffee order", main = "Coffee as Categorical Covariate")
+abline(b=0,a=28.148, col = "pink")
+abline(b=0,a=28.148+16.922, col = "red")
+abline(b=0,a=28.148+15.833, col = "blue")
+abline(b=0,a=28.148+21.380 , col = "green")
+abline(b=0,a=28.148+22.322, col = "yellow")
+
+legend(3.5, 20, legend=c("0 coffee","1 Coffee", "2 Coffee","3 Coffee","4 Coffee"),
+       col=c("pink","red", "blue","green", "yellow"), lty=1:2, cex=0.7)
+```
+
+**Word count for Q2:** 149/150 words.
+
+## Question 3
+
+Model 2a can be summarised as below. It is concerning that the p-value of traffic is high (0.47>0.05), meaning the relationship  between time and traffic is insignificant in the linear model.
+
+```{r echo=FALSE, include = TRUE}
+model2a<-lm(df$time~df$traffic, data=df)
+summary(model2a)
+```
+To evaluate the linearity assumption, a scatter plot of time against traffic can be used:
+
+```{r echo=FALSE, include = TRUE, warning=FALSE,  fig.height=5, fig.width=10, fig.align='center'}
+plot(df$traffic,df$time, ylab = "time(minute)" ,xlab="traffic",pch = 19)
+```
+
+The scatter plot displays a strong non-linear (quadratic) relationship between commute time and traffic. This leads to the fact that assumption of linearity will not be appropriate in this scenario.
+
+**Word count for Q3:** 76/100 words.
+
+## Question 4
+
+Adding 5 was necessary as traffic takes a range [-5,5], but log() and sqrt() only takes non-negative values. +5 will map traffic onto [0,10], which is compatible with these transformations
+
+Plots of time against traffic^2, log(traffic+5) and sqrt(traffic+5) can be shown below. A strong linear relationship can be seen between time and traffic^2. That is, however, not the case for log(traffic+5) and sqrt(traffic+5), which makes sense as we can observe previously that there was a quadratic relationship between time and traffic in the EDA. traffic^2 will therefore be the best transformation for the linearity assumption of the model.
+
+
+```{r echo=FALSE, warning=FALSE,,  fig.height=4, fig.width=10, fig.align='center'}
+par(mfrow=c(1,3))
+
+traffic1 <- df$traffic^2
+plot(jitter(traffic1,10),df$time, ylab="time", xlab="traffic^2", pch = 20, main = "traffic^2")
+
+traffic2 <- log(df$traffic+5)
+plot(jitter(traffic2,10),df$time, ylab="time", xlab="log(traffic+5)", pch = 20, main="log(traffic + 5)")
+
+traffic3 <- sqrt(df$traffic+5)
+plot(jitter(traffic3,10),df$time, ylab="time", xlab="sqrt(traffic+5)", pch = 20, main = "sqrt(traffic+5)")
+
+```
+
+
+```{r include=TRUE,echo=FALSE, warning = FALSE}
+model2b<-lm(df$time~traffic1, data=df)
+summary(model2b)
+```
+As we recall the two model:
+
+* Model 2a: time = 39.9799 + 0.2002*traffic
+* Model 2b: time  = 53.2512  - 7.0731*(traffic^2)
+
+In general, the estimated intercept increased from 39.9799 to 53.2512, while the estimated gradient changed in sign and increased from 0.2002 to 7.0731.The p-value of the gradient coefficient also decreased dramatically from 0.47 to <2e-16.
+
+Given the stronger linear relationship after transforming traffic, Model 2b has a significant gradient coefficient after fitting. Compared to Model 2a where p-value is large (0.47 > 0.05), we fails to reject the null hypothesis that the gradient coefficient is 0.
+
+Model 2b also displays a better R-squared value (0.3607) compared to Model 2a (0.0009582). This means Model 2b fits the observations better than Model 2a.
+
+**Word count for Q4:** 222/250 words.
+
+
+## Question 5
+
+```{r include=TRUE,echo=FALSE, warning = FALSE}
+model3<-lm(df$time~df$direction+df$food+df$shoes+df$school+df$coffee + df$rain + df$temperature + df$traffic, data=df)
+summary(model3)
+```
+From the summary, it can be seen that 10 regression coefficients are estimated. 
+
+The regression coefficients can be interpreted in context:
+
+* Rain coefficient: time is expected to increase by approximately 2.31 minutes rain increase by 1mm, given all coffee, temperature, traffic as constant and holding shoes, food, school, and direction being constant.
+
+
+* shoessandals dummy variable: time is expected to increase by approximately 8.05 minutes if Sandals are worn instead of other types of shoes, given all other covariates staying constant 
+
+* Intercept: the expected amount of time taken is approximately 13.54 minutes, given the individual travel from work, did not buy food, wore boots, did not drop kids at school, did not stop for coffee, average temperature was zero, and traffic index was 0.
+
+**Word count for Q5:** 150/250 words.
+
+## Question 6
+
+After fitting in Model 3, the estimated coefficients of the predictor covariates means that if the covariate increases by 1, the response variable will increase by an according value of the coefficient. 
+
+When time is scaled by 60, to change from minutes to seconds, all the coefficients must also be multiplied with 60 to preserve the linear relationship between the predictor and the response covariates. That relationship does not change.
+
+**Word count for Q6:** 70/100 words.
+
+## Question 7
+
+Plot of time against rain, varying with shoes type:
+
+```{r include=TRUE,echo=FALSE, warning = FALSE}
+
+
+plot(df$rain[df$shoes == "boots"],
+     df$time[df$shoes == "boots"],
+     type = "p", xlab = "Rain(mm)", ylab = "Time(minutes)",
+     pch = 20, col = "light green", cex = 1.5
+)
+
+points(df$rain[df$shoes == "plimsolls"],
+      df$time[df$shoes == "plimsolls"],
+     type = "p", xlab = "Rain(mm)", ylab = "Time(minutes)",
+     pch = 20,col = "blue", cex = 1.5
+)
+
+points(df$rain[df$shoes == "sandals"],
+      df$time[df$shoes == "sandals"],
+     type = "p", xlab = "Rain(mm)", ylab = "Time(minutes)",
+     pch = 20, col = "light pink", cex = 1.5
+)
+
+points(df$rain[df$shoes == "trainers"],
+      df$time[df$shoes == "trainers"],
+     type = "p", xlab = "Rain(mm)", ylab = "Time(minutes)",
+     pch = 20, col = "yellow", cex = 1.5
+)
+
+legend(5, 20, legend=c("boots","plimsolls", "sandals","trainers"),
+       col=c("light green", "blue","light pink", "yellow"), lty=1,cex=0.6)
+
+```
+It can be seen that the scatter plots of time against rain vary across different of shoes. For example, that of sandals (light pink) is generally higher than that of boots (light green). It is thus fair to say that shoes has an effect on the time-rain relationship.
+
+An interaction term can be added to the model:
+
+```{r include=TRUE, echo=FALSE}
+model4<-lm(df$time~df$direction+df$food+df$shoes+df$school+df$coffee + df$rain + df$temperature + df$traffic + (df$rain * df$shoes), data=df)
+summary(model4)
+```
+
+The new linear model accounts for the effects of shoes on the relationship between rain and time, which supported the suggestion. If we isolate coefficient of rain by partial differentiation, the coefficient would be beta*(shoes type), where beta is the estimated coefficient.This varies with the dummy variable of the shoes type.
+
+By isolating the coefficient of interest, each of the additional covariate can be interpreted as follow:
+
+* shoesplimsolls & rain coefficient in model4: when the amount of rainfall increase by 1mm, the expected change in commute time is approximately 2.16 minutes, given they wear plimsolls.
+
+* shoessandals & rain coefficient in model4: when the amount of rainfall increase by 1mm, the expected change in commute time is approximately 6.67 minutes, given they wear sandals.
+
+* shoestrainers & rain coefficient in model4: when the amount of rainfall increase by 1mm, the expected change in commute time is approximately 1.14 minute, given they wear trainers.
+
+
+
+
+**Word count for Q7:** 220/300 words.
+
+## Question 8
+
+Two further modifications can be proposed to Model 4:
+
+* Remove direction as it p-value is 0.608110, implying insignificant relationship with the response variable in the model.
+
+* Replace traffic with traffic^2 as there is a stronger linear relationship between time and traffic^2.
+
+No further interaction term was included because we are not well-informed of the relationships between the other predictor covariates. Adding more terms could also increase the risk of overfitting.
+
+The inflated p-values of the predictor covariates (rain and dummy variables of shoes) is not concerning because it is the result of the interaction term. The coefficient of traffic1 (or traffic^2) has p-value of < 2e^-16, which is significant.
+
+Model 5 can be fitted as below. It can be seen that the Adjusted R-squared did not drop by a large amount compared to the Multiple R-squared value, implying that this model does not overfit. 
+
+```{r include=TRUE,echo=FALSE}
+
+model5<-lm(df$time~df$food+ df$shoes+ df$school+ df$coffee + df$rain + df$temperature + traffic1 + df$rain * df$shoes, data=df)
+
+summary(model5)
+
+```
+
+**Word count for Q8:** 146/150 words.
+
+## Question 9
+
+The scatter plots of observed-predicted values of time between three models can be compared as below:
+
+```{r include=TRUE,echo=FALSE,warning=FALSE,  fig.height=3, fig.width=10, fig.align='center'}
+par(mfrow=c(1,3))
+model3_fit <- fitted.values(model3)
+model4_fit <- fitted.values(model4)
+model5_fit <- fitted.values(model5)
+
+plot(df$time, model3_fit, ylab = "observed time" , xlab = "predicted time Model 3", pch = 20)
+abline(a=0, b = 1, col = "red" , lwd = 2)
+
+plot(df$time, model4_fit, ylab = "observed time" , xlab = "predicted time Model 4", pch = 20)
+abline(a=0, b = 1, col = "red" , lwd = 2)
+
+plot(df$time, model5_fit, ylab = "observed time" , xlab = "predicted time Model 5", pch = 20)
+abline(a=0, b = 1, col = "red" , lwd = 2)
+
+
+```
+If all the points lie perfectly on the y=x line, it means that all the predicted values are the same as the observed values, and the model has highly accurate predictability. Therefore, the more the points align with the line, the better the model. It can be concluded that:
+
+* The plots of Model 3 and Model 4 have larger spread around y=x compared to Model 5, implying less accurate prediction.
+
+* Model 5 is therefore the best of the three, which agrees with the analysis and selection of its predictor covariates in Question 8.
+
+
+
+**Word count for Q9:** 111/150 words.
+
